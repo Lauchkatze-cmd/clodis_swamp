@@ -38,8 +38,8 @@ public class EnemySenses : MonoBehaviour
         Vector3 b = player.position; b.y = 0f;
         bool inRange = seesPlayer && Vector3.Distance(a, b) <= attackRange;
 
-        // Letzte bekannte Position wird nur aktualisiert, solange er den Spieler sieht.
-        // Beim Sichtverlust bleibt sie also der letzte echte Sichtpunkt.
+        // The last known position is only updated while he sees the player.
+        // When sight is lost, it stays at the last real sighting point.
         if (seesPlayer)
         {
             behaviorAgent.SetVariableValue("lastKnownPosition", player.position);
