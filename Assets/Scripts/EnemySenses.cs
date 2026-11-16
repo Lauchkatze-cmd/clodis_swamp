@@ -2,6 +2,7 @@ using Unity.Behavior;
 using UnityEngine;
 
 [RequireComponent(typeof(BehaviorGraphAgent))]
+[RequireComponent(typeof(EnemyStatus))]
 public class EnemySenses : MonoBehaviour
 {
     [Header("Senses")]
@@ -9,57 +10,45 @@ public class EnemySenses : MonoBehaviour
     [SerializeField] private float viewAngle = 120f;
     [SerializeField] private float hearingDistance = 3f;
     [SerializeField] private float eyeHeight = 1.5f;
-    [SerializeField] private float attackRange = 2.5f; // Ab welcher Distanz wird zugeschlagen?
+    [SerializeField] private float attackRange = 2.5f;
 
     private BehaviorGraphAgent behaviorAgent;
+    private EnemyStatus status;
     private Transform player;
-    
-    // Um den Übergang von Chase zu Search zu erkennen
-    private bool lastSeenState = false;
 
     private void Awake()
     {
         behaviorAgent = GetComponent<BehaviorGraphAgent>();
+        status = GetComponent<EnemyStatus>();
     }
 
     private void Start()
     {
         GameObject playerObject = GameObject.FindWithTag("Player");
-        if (playerObject != null)
-        {
-            player = playerObject.transform;
-        }
+        if (playerObject != null) player = playerObject.transform;
     }
 
     private void Update()
     {
         if (player == null || behaviorAgent == null) return;
 
-        // 1. Sichtprüfung ausführen
         bool seesPlayer = CheckCanSeePlayer();
 
-        // 2. Distanz für den Angriff prüfen
-        float distanceToPlayer = Vector3.Distance(transform.position, player.position);
-        bool inRange = seesPlayer && (distanceToPlayer <= attackRange);
+        Vector3 a = transform.position; a.y = 0f;
+        Vector3 b = player.position; b.y = 0f;
+        bool inRange = seesPlayer && Vector3.Distance(a, b) <= attackRange;
 
-        // 3. Letzte bekannte Position merken (wichtig für Search, falls Sicht verloren geht)
+        // Letzte bekannte Position wird nur aktualisiert, solange er den Spieler sieht.
+        // Beim Sichtverlust bleibt sie also der letzte echte Sichtpunkt.
         if (seesPlayer)
         {
             behaviorAgent.SetVariableValue("lastKnownPosition", player.position);
             behaviorAgent.SetVariableValue("hasLastKnownPosition", true);
         }
-        else if (lastSeenState && !seesPlayer)
-        {
-            // Spieler wurde gerade eben aus den Augen verloren -> Suche aktivieren
-            behaviorAgent.SetVariableValue("hasLastKnownPosition", true);
-            behaviorAgent.SetVariableValue("lastKnownPosition", player.position);
-        }
 
-        lastSeenState = seesPlayer;
-
-        // Werte in den Blackboard-Graph schreiben
         behaviorAgent.SetVariableValue("canSeePlayer", seesPlayer);
         behaviorAgent.SetVariableValue("inAttackRange", inRange);
+        behaviorAgent.SetVariableValue("isStunned", status.IsStunned);
         behaviorAgent.SetVariableValue("player", player.gameObject);
     }
 

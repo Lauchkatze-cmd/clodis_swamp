@@ -10,19 +10,21 @@ using Unity.Properties;
 public partial class ChaseAction : Action
 {
     [SerializeReference] public BlackboardVariable<float> ChaseSpeed = new BlackboardVariable<float>(3.8f);
-    [SerializeReference] public BlackboardVariable<GameObject> player = new BlackboardVariable<GameObject>();
+    [SerializeReference] public BlackboardVariable<GameObject> player;
+    [SerializeReference] public BlackboardVariable<bool> canSeePlayer;
+    [SerializeReference] public BlackboardVariable<bool> inAttackRange;
+    [SerializeReference] public BlackboardVariable<bool> isStunned;
 
     private NavMeshAgent agent;
 
     protected override Status OnStart()
     {
-        if (GameObject == null) return Status.Failure;
+        if (!canSeePlayer.Value)
+            Debug.LogWarning("ChaseAction: canSeePlayer ist false. Ist das Feld im Node verlinkt?");
+        if (ShouldStop()) return Status.Success;
 
         agent = GameObject.GetComponent<NavMeshAgent>();
-        if (agent == null || !agent.enabled || !agent.isOnNavMesh)
-        {
-            return Status.Failure;
-        }
+        if (agent == null || !agent.enabled || !agent.isOnNavMesh) return Status.Failure;
 
         agent.isStopped = false;
         agent.speed = ChaseSpeed.Value;
@@ -31,20 +33,11 @@ public partial class ChaseAction : Action
 
     protected override Status OnUpdate()
     {
-        if (agent == null || !agent.enabled || !agent.isOnNavMesh)
-        {
-            return Status.Failure;
-        }
+        if (ShouldStop()) return Status.Success;
+        if (agent == null || !agent.enabled || !agent.isOnNavMesh) return Status.Failure;
 
         if (player.Value != null)
-        {
             agent.SetDestination(player.Value.transform.position);
-        }
-        else
-        {
-            // Falls das Player-Objekt fehlt, kurz warten statt fehlschlagen
-            return Status.Running;
-        }
 
         return Status.Running;
     }
@@ -52,8 +45,12 @@ public partial class ChaseAction : Action
     protected override void OnEnd()
     {
         if (agent != null && agent.enabled && agent.isOnNavMesh)
-        {
             agent.isStopped = true;
-        }
+    }
+
+    // Success = "fertig, bitte neu auswerten". Stunned und Attack haben höhere Priorität.
+    private bool ShouldStop()
+    {
+        return isStunned.Value || inAttackRange.Value || !canSeePlayer.Value;
     }
 }

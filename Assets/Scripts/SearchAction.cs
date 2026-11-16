@@ -12,16 +12,20 @@ public partial class SearchAction : Action
     [SerializeReference] public BlackboardVariable<bool> hasLastKnownPosition;
     [SerializeReference] public BlackboardVariable<Vector3> lastKnownPosition;
     [SerializeReference] public BlackboardVariable<float> SearchDuration = new BlackboardVariable<float>(4f);
+    [SerializeReference] public BlackboardVariable<bool> canSeePlayer;
+    [SerializeReference] public BlackboardVariable<bool> isStunned;
 
     private float searchTimer;
 
     protected override Status OnStart()
     {
+        if (canSeePlayer.Value || isStunned.Value) return Status.Success;
+
         var agent = GameObject.GetComponent<NavMeshAgent>();
-        if (agent != null && hasLastKnownPosition.Value)
+        if (agent != null && agent.enabled && agent.isOnNavMesh)
         {
             agent.isStopped = false;
-            agent.speed = 2f; // Such-Geschwindigkeit
+            agent.speed = 2f;
             agent.SetDestination(lastKnownPosition.Value);
         }
         searchTimer = 0f;
@@ -30,19 +34,19 @@ public partial class SearchAction : Action
 
     protected override Status OnUpdate()
     {
+        if (canSeePlayer.Value || isStunned.Value) return Status.Success;
+
         var agent = GameObject.GetComponent<NavMeshAgent>();
-        if (agent != null)
+        if (agent != null && agent.enabled && agent.isOnNavMesh)
         {
-            // Prüfen, ob das Ziel erreicht wurde
             if (!agent.pathPending && agent.remainingDistance <= agent.stoppingDistance + 0.3f)
             {
                 searchTimer += Time.deltaTime;
-                GameObject.transform.Rotate(0f, 90f * Time.deltaTime, 0f); // Umschauen
+                GameObject.transform.Rotate(0f, 90f * Time.deltaTime, 0f);
 
                 if (searchTimer >= SearchDuration.Value)
                 {
                     hasLastKnownPosition.Value = false;
-                    searchTimer = 0f;
                     return Status.Success;
                 }
             }
@@ -50,7 +54,5 @@ public partial class SearchAction : Action
         return Status.Running;
     }
 
-    protected override void OnEnd()
-    {
-    }
+    protected override void OnEnd() { }
 }

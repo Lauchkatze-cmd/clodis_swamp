@@ -13,6 +13,11 @@ public partial class PatrolAction : Action
     [SerializeReference] public BlackboardVariable<float> PatrolSpeed = new BlackboardVariable<float>(2f);
     [SerializeReference] public BlackboardVariable<float> WaitTime = new BlackboardVariable<float>(1f);
 
+    // Müssen im Graph mit den Blackboard-Variablen verlinkt werden
+    [SerializeReference] public BlackboardVariable<bool> canSeePlayer;
+    [SerializeReference] public BlackboardVariable<bool> isStunned;
+    [SerializeReference] public BlackboardVariable<bool> hasLastKnownPosition;
+
     private List<Transform> waypoints = new List<Transform>();
     private float waitTimer;
     private int patrolIndex = 0;
@@ -20,6 +25,9 @@ public partial class PatrolAction : Action
 
     protected override Status OnStart()
     {
+        // Nicht patrouillieren, wenn ein höherer Branch zuständig ist
+        if (ShouldYield()) return Status.Success;
+
         var agent = GameObject.GetComponent<NavMeshAgent>();
         if (agent != null && agent.enabled && agent.isOnNavMesh)
         {
@@ -29,7 +37,7 @@ public partial class PatrolAction : Action
 
         if (waypoints.Count == 0 && GameObject != null)
         {
-            // Sucht jetzt weltweit in der Szene nach dem Ordner (z.B. "SwampGuard_South_Waypoints")
+            // Sucht in der Szene nach dem Ordner (z.B. "SwampGuard_South_Waypoints")
             string targetWaypointName = GameObject.name + "_Waypoints";
             GameObject waypointParent = GameObject.Find(targetWaypointName);
 
@@ -49,15 +57,17 @@ public partial class PatrolAction : Action
         }
 
         waitTimer = 0f;
-        patrolIndex = 0;
-        currentTarget = null;
+        currentTarget = null; // patrolIndex bleibt erhalten, damit er nach einer Unterbrechung weitermacht
         return Status.Running;
     }
 
     protected override Status OnUpdate()
     {
+        // Ausstieg: Try In Order endet, Repeat startet neu, die Branches werden von oben geprüft
+        if (ShouldYield()) return Status.Success;
+
         var agent = GameObject.GetComponent<NavMeshAgent>();
-        if (agent == null || !agent.enabled || !agent.isOnNavMesh || waypoints.Count == 0) 
+        if (agent == null || !agent.enabled || !agent.isOnNavMesh || waypoints.Count == 0)
         {
             return Status.Running;
         }
@@ -96,5 +106,10 @@ public partial class PatrolAction : Action
         {
             agent.isStopped = true;
         }
+    }
+
+    private bool ShouldYield()
+    {
+        return canSeePlayer.Value || isStunned.Value || hasLastKnownPosition.Value;
     }
 }

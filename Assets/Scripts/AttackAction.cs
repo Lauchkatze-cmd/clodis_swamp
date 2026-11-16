@@ -9,31 +9,31 @@ using Unity.Properties;
 [NodeDescription(name: "AttackAction", story: "Agent attacks Player in range", category: "Action", id: "ac30cd44eddeb8234b58d61317832764")]
 public partial class AttackAction : Action
 {
-    [SerializeReference] public BlackboardVariable<GameObject> player; 
+    [SerializeReference] public BlackboardVariable<GameObject> player;
     [SerializeReference] public BlackboardVariable<float> AttackCooldown = new BlackboardVariable<float>(1.2f);
-    [SerializeReference] public BlackboardVariable<int> AttackDamage = new BlackboardVariable<int>(1);
+    [SerializeReference] public BlackboardVariable<float> AttackDamage = new BlackboardVariable<float>(1f);
+    [SerializeReference] public BlackboardVariable<bool> canSeePlayer;
+    [SerializeReference] public BlackboardVariable<bool> inAttackRange;
+    [SerializeReference] public BlackboardVariable<bool> isStunned;
 
     private float nextAttackTime;
-    private NavMeshAgent agent;
 
     protected override Status OnStart()
     {
+        if (ShouldStop()) return Status.Success;
+
         var agent = GameObject.GetComponent<NavMeshAgent>();
         if (agent != null && agent.enabled && agent.isOnNavMesh)
-        {
-            agent.isStopped = true; // Korrigiert von player auf agent
-        }
+            agent.isStopped = true;
+
         return Status.Running;
     }
 
     protected override Status OnUpdate()
     {
-        if (player == null || player.Value == null)
-        {
-            return Status.Running;
-        }
+        if (ShouldStop()) return Status.Success;
+        if (player.Value == null) return Status.Failure;
 
-        // Zum Player ausrichten
         Vector3 direction = player.Value.transform.position - GameObject.transform.position;
         direction.y = 0f;
         if (direction.sqrMagnitude > 0.001f)
@@ -42,18 +42,12 @@ public partial class AttackAction : Action
             GameObject.transform.rotation = Quaternion.Slerp(GameObject.transform.rotation, targetRotation, 10f * Time.deltaTime);
         }
 
-        // Schaden zufügen nach Cooldown
-        float cooldown = AttackCooldown != null ? AttackCooldown.Value : 1.2f;
-        int damage = AttackDamage != null ? AttackDamage.Value : 1;
-
         if (Time.time >= nextAttackTime)
         {
-            nextAttackTime = Time.time + cooldown;
+            nextAttackTime = Time.time + AttackCooldown.Value;
             var playerHealth = player.Value.GetComponent<PlayerHealth>();
             if (playerHealth != null)
-            {
-                playerHealth.TakeDamage(damage);
-            }
+                playerHealth.TakeDamage(Mathf.RoundToInt(AttackDamage.Value));
         }
         return Status.Running;
     }
@@ -62,8 +56,11 @@ public partial class AttackAction : Action
     {
         var agent = GameObject.GetComponent<NavMeshAgent>();
         if (agent != null && agent.enabled && agent.isOnNavMesh)
-        {
             agent.isStopped = true;
-        }
+    }
+
+    private bool ShouldStop()
+    {
+        return isStunned.Value || !canSeePlayer.Value || !inAttackRange.Value;
     }
 }
