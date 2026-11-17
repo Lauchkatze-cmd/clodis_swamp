@@ -12,6 +12,8 @@ public partial class PatrolAction : Action
 {
     [SerializeReference] public BlackboardVariable<float> PatrolSpeed = new BlackboardVariable<float>(2f);
     [SerializeReference] public BlackboardVariable<float> WaitTime = new BlackboardVariable<float>(1f);
+
+    // Müssen im Graph mit den Blackboard-Variablen verlinkt werden
     [SerializeReference] public BlackboardVariable<bool> canSeePlayer;
     [SerializeReference] public BlackboardVariable<bool> isStunned;
     [SerializeReference] public BlackboardVariable<bool> hasLastKnownPosition;
@@ -23,7 +25,7 @@ public partial class PatrolAction : Action
 
     protected override Status OnStart()
     {
-        // Do not patrol if a higher-priority branch is responsible
+        // Nicht patrouillieren, wenn ein höherer Branch zuständig ist
         if (ShouldYield()) return Status.Success;
 
         var agent = GameObject.GetComponent<NavMeshAgent>();
@@ -35,7 +37,7 @@ public partial class PatrolAction : Action
 
         if (waypoints.Count == 0 && GameObject != null)
         {
-            // Searches the scene for the folder (e.g. "SwampGuard_South_Waypoints")
+            // Sucht in der Szene nach dem Ordner (z.B. "SwampGuard_South_Waypoints")
             string targetWaypointName = GameObject.name + "_Waypoints";
             GameObject waypointParent = GameObject.Find(targetWaypointName);
 
@@ -46,22 +48,22 @@ public partial class PatrolAction : Action
                 {
                     waypoints.Add(child);
                 }
-                Debug.Log($"Loaded {waypoints.Count} waypoints from '{targetWaypointName}' for {GameObject.name}.");
+                Debug.Log($"{waypoints.Count} Wegpunkte aus '{targetWaypointName}' für {GameObject.name} geladen.");
             }
             else
             {
-                Debug.LogWarning($"Waypoint folder '{targetWaypointName}' was not found!");
+                Debug.LogWarning($"Welt-Ordner '{targetWaypointName}' wurde nicht gefunden!");
             }
         }
 
         waitTimer = 0f;
-        currentTarget = null; // patrolIndex is kept so he continues after an interruption
+        currentTarget = null; // patrolIndex bleibt erhalten, damit er nach einer Unterbrechung weitermacht
         return Status.Running;
     }
 
     protected override Status OnUpdate()
     {
-        // Exit: Try In Order ends, Repeat restarts, and the branches are checked from the top
+        // Ausstieg: Try In Order endet, Repeat startet neu, die Branches werden von oben geprüft
         if (ShouldYield()) return Status.Success;
 
         var agent = GameObject.GetComponent<NavMeshAgent>();

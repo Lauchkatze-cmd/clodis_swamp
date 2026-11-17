@@ -1,11 +1,6 @@
 using UnityEngine;
 using UnityEngine.UI;
 
-/// <summary>
-/// Small stamina bar for the sprint ability, shown at the bottom of the screen.
-/// It builds itself at runtime on the first Canvas in the scene, nothing to set up.
-/// Added automatically by the PlayerController.
-/// </summary>
 public class StaminaBar : MonoBehaviour
 {
     [SerializeField] private Vector2 size = new Vector2(320f, 18f);
@@ -59,7 +54,6 @@ public class StaminaBar : MonoBehaviour
         fill.anchorMax = new Vector2(Mathf.Clamp01(value), 1f);
         fillImage.color = Color.Lerp(lowColor, fullColor, value);
 
-        // Only show the bar while it matters
         if (value < 0.999f || player.IsSprinting) fullSince = Time.time;
         float targetAlpha = Time.time - fullSince < hideDelay ? 1f : 0f;
         group.alpha = Mathf.MoveTowards(group.alpha, targetAlpha, Time.deltaTime * 3f);

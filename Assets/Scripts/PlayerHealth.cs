@@ -1,9 +1,6 @@
 using UnityEngine;
 
-/// <summary>
-/// Player health. Enemies call TakeDamage(). At 0 health the game is lost.
-/// After a hit Clodi is invincible for a short time and blinks.
-/// </summary>
+
 public class PlayerHealth : MonoBehaviour
 {
     [SerializeField] private int maxHealth = 3;
@@ -24,7 +21,6 @@ public class PlayerHealth : MonoBehaviour
 
     private void Update()
     {
-        // Blink while invincible, but always stay visible when the game is over
         bool invincible = Time.time < invincibleUntil && currentHealth > 0;
         bool visible = !invincible || Mathf.Repeat(Time.time, blinkInterval * 2f) < blinkInterval;
         SetVisible(visible);

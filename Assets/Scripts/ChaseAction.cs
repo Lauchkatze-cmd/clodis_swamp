@@ -20,7 +20,7 @@ public partial class ChaseAction : Action
     protected override Status OnStart()
     {
         if (!canSeePlayer.Value)
-            Debug.LogWarning("ChaseAction: canSeePlayer is false. Is the field linked in the node?");
+            Debug.LogWarning("ChaseAction: canSeePlayer ist false. Ist das Feld im Node verlinkt?");
         if (ShouldStop()) return Status.Success;
 
         agent = GameObject.GetComponent<NavMeshAgent>();
@@ -48,7 +48,6 @@ public partial class ChaseAction : Action
             agent.isStopped = true;
     }
 
-    // Success = "done, please re-evaluate". Stunned and Attack have higher priority.
     private bool ShouldStop()
     {
         return isStunned.Value || inAttackRange.Value || !canSeePlayer.Value;

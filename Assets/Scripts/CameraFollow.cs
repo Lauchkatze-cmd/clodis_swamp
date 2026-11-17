@@ -1,9 +1,5 @@
 using UnityEngine;
 
-/// <summary>
-/// Camera follows the player from behind and above, without rotating with him.
-/// Put it on the Main Camera. Do NOT make the camera a child of the player.
-/// </summary>
 public class CameraFollow : MonoBehaviour
 {
     [SerializeField] private Transform target;
